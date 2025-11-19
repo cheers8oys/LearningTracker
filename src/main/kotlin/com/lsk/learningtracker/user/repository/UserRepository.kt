@@ -22,7 +22,7 @@ class UserRepository {
         DatabaseManager.getConnection().use { conn ->
             conn.prepareStatement(sql).use { stmt ->
                 stmt.setString(1, user.username)
-                stmt.setString(2, user.password)
+                stmt.setString(2, user.getPasswordHash())
                 stmt.setString(3, formatDateTime(LocalDateTime.now()))
                 stmt.executeUpdate()
             }
@@ -42,7 +42,7 @@ class UserRepository {
                 return if (rs.next()) {
                     User(
                         username = rs.getString("username"),
-                        password = rs.getString("password")
+                        passwordHash = rs.getString("password")
                     )
                 } else {
                     null
@@ -63,7 +63,7 @@ class UserRepository {
                     users.add(
                         User(
                             username = rs.getString("username"),
-                            password = rs.getString("password")
+                            passwordHash = rs.getString("password")
                         )
                     )
                 }

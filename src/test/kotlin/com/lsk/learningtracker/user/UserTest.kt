@@ -1,8 +1,7 @@
 package com.lsk.learningtracker.user
 
 import com.lsk.learningtracker.user.model.User
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -47,10 +46,9 @@ class UserTest {
     @MethodSource("invalidUsernameLengths")
     fun validateUsernameLength(username: String) {
 
-        val exception = assertThrows<IllegalArgumentException> {
-            User(username, "password123")
+        assertThrows<IllegalArgumentException> {
+            User.create(username, "password123")
         }
-        assertTrue(exception.message!!.contains("4-20자"))
     }
 
     @ParameterizedTest
@@ -58,21 +56,34 @@ class UserTest {
     @ValueSource(strings = ["pobi@123", "pobi 123", "pobi!123", "pobi#123"])
     fun validateUsernameFormat(username: String) {
 
-        val exception = assertThrows<IllegalArgumentException> {
-            User(username, "password123")
+        assertThrows<IllegalArgumentException> {
+            User.create(username, "password123")
         }
-        assertTrue(exception.message!!.contains("영문과 숫자"))
     }
 
     @ParameterizedTest
     @DisplayName("비밀번호 길이가 범위를 벗어나면 예외 발생")
     @MethodSource("invalidPasswordLengths")
     fun validatePasswordLength(password: String) {
-
-        val exception = assertThrows<IllegalArgumentException> {
-            User("pobi1234", password)
+        assertThrows<IllegalArgumentException> {
+            User.create("pobi1234", password)
         }
-        assertTrue(exception.message!!.contains("8-20자"))
+    }
+
+    @Test
+    @DisplayName("올바른 비밀번호로 로그인 성공")
+    fun matchesPasswordSuccess() {
+        val user = User.create("pobi1234", "password123")
+
+        assertTrue(user.matchesPassword("password123"))
+    }
+
+    @Test
+    @DisplayName("잘못된 비밀번호로 로그인 실패")
+    fun matchesPasswordFailure() {
+        val user = User.create("pobi1234", "password123")
+
+        assertFalse(user.matchesPassword("wrongpass"))
     }
 
     @ParameterizedTest

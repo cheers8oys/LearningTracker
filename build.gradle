@@ -49,6 +49,7 @@ dependencies {
     implementation("org.openjfx:javafx-controls:21")
     implementation("org.openjfx:javafx-fxml:21")
 
+    implementation("org.mindrot:jbcrypt:0.4")
 }
 
 test {

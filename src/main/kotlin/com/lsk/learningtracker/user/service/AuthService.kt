@@ -20,7 +20,7 @@ class AuthService(
         val user = userRepository.findByUsername(username)
             ?: throw IllegalArgumentException("존재하지 않는 사용자입니다.")
 
-        require(user.password == password) {
+        require(user.matchesPassword(password)) {
             "비밀번호가 일치하지 않습니다."
         }
 
