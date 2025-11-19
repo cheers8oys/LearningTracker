@@ -45,4 +45,31 @@ class TodoServiceTest {
         assertEquals(content1, todos[0].content)
         assertEquals(content2, todos[1].content)
     }
+
+    @Test
+    fun 투두_수정_테스트() {
+        val content = "원본 투두"
+        val todo = todoService.createTodo(testUserId, content)
+
+        val updatedContent = "수정된 투두"
+        val updatedTodo = todo.copy(content = updatedContent, status = TodoStatus.IN_PROGRESS)
+        todoService.updateTodo(updatedTodo)
+
+        val todos = todoService.getTodayTodos(testUserId)
+        val fetchedTodo = todos.find { it.id == todo.id }!!
+
+        assertEquals(updatedContent, fetchedTodo.content)
+        assertEquals(TodoStatus.IN_PROGRESS, fetchedTodo.status)
+    }
+
+    @Test
+    fun 투두_삭제_테스트() {
+        val content = "삭제 테스트용 투두"
+        val todo = todoService.createTodo(testUserId, content)
+
+        todoService.deleteTodo(todo.id)
+        val todos = todoService.getTodayTodos(testUserId)
+
+        assertTrue(todos.none { it.id == todo.id })
+    }
 }
