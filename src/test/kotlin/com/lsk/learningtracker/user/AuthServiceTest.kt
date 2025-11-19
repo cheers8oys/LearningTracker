@@ -33,7 +33,7 @@ class AuthServiceTest {
         "abcd1234, abcdpass000"
     )
     fun register(username: String, password: String) {
-        val user = authService.register(username, password)
+        val user = authService.register(username, password, password)
 
         assertNotNull(user)
         assertEquals(username, user.username)
@@ -43,7 +43,7 @@ class AuthServiceTest {
     @DisplayName("중복된 username으로 회원가입 시도 시 예외 발생")
     fun registerDuplicateUsername() {
         assertThrows<IllegalArgumentException> {
-            authService.register("pobi1234", "password456")
+            authService.register("pobi1234", "password456", "password456")
         }
     }
 

@@ -7,7 +7,11 @@ class AuthService(
     private val userRepository: UserRepository
 ) {
 
-    fun register(username: String, password: String): User {
+    fun register(username: String, password: String, confirmPassword: String): User {
+
+        require(password == confirmPassword) {
+            "비밀번호가 일치하지 않습니다."
+        }
         val user = User(username, password)
         return userRepository.save(user)
     }
