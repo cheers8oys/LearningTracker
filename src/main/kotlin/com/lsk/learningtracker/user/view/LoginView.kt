@@ -5,10 +5,7 @@ import com.lsk.learningtracker.user.service.AuthService
 import javafx.geometry.Insets
 import javafx.geometry.Pos
 import javafx.scene.Scene
-import javafx.scene.control.Button
-import javafx.scene.control.Label
-import javafx.scene.control.PasswordField
-import javafx.scene.control.TextField
+import javafx.scene.control.*
 import javafx.scene.layout.VBox
 import javafx.stage.Stage
 
@@ -20,6 +17,7 @@ class LoginView(
 
     private val usernameField = TextField()
     private val passwordField = PasswordField()
+    private val rememberMeCheckBox = CheckBox("자동 로그인")
     private val loginButton = Button("로그인")
     private val goToSignUpButton = Button("회원가입")
     private val messageLabel = Label()
@@ -42,6 +40,9 @@ class LoginView(
                 passwordField.apply {
                     promptText = "8-20자"
                     prefWidth = 250.0
+                },
+                rememberMeCheckBox.apply {
+                    style = "-fx-font-size: 12px;"
                 },
                 loginButton.apply {
                     prefWidth = 250.0
@@ -82,6 +83,7 @@ class LoginView(
     private fun handleLogin() {
         val username = usernameField.text.trim()
         val password = passwordField.text
+        val rememberMe = rememberMeCheckBox.isSelected
 
         if (username.isEmpty() || password.isEmpty()) {
             showMessage("Username과 Password를 입력해주세요.")
@@ -89,7 +91,7 @@ class LoginView(
         }
 
         try {
-            val user = authService.login(username, password)
+            val user = authService.login(username, password, rememberMe)
             showMessage("✅ 로그인 성공: ${user.username}님 환영합니다!", isError = false)
             onLoginSuccess(user)
 

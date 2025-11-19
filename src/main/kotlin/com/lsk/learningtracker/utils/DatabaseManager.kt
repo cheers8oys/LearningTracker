@@ -48,4 +48,14 @@ object DatabaseManager {
             }
         }
     }
+
+    // 테이블 재생성 (스키마 변경 시)
+    fun recreateDatabase() {
+        getConnection().use { conn ->
+            conn.createStatement().use { stmt ->
+                stmt.execute("DROP TABLE IF EXISTS users")
+            }
+        }
+        initializeDatabase()
+    }
 }

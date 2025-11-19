@@ -1,8 +1,12 @@
 package com.lsk.learningtracker.user.model
 
+import java.time.LocalDateTime
+
 data class User(
     val username: String,
-    private val passwordHash: String
+    private val passwordHash: String,
+    var autoLoginToken: String? = null,
+    var tokenExpiresAt: LocalDateTime? = null
 ) {
     init {
         validateUsername()
@@ -25,6 +29,25 @@ data class User(
         return passwordHash
     }
 
+    fun generateAutoLoginToken(): AutoLoginToken {
+        val token = AutoLoginToken()
+        this.autoLoginToken = token.token
+        this.tokenExpiresAt = token.expiresAt
+        return token
+    }
+
+    fun clearAutoLoginToken() {
+        this.autoLoginToken = null
+        this.tokenExpiresAt = null
+    }
+
+    fun hasValidAutoLoginToken(): Boolean {
+        if (autoLoginToken == null || tokenExpiresAt == null) {
+            return false
+        }
+        return LocalDateTime.now().isBefore(tokenExpiresAt)
+    }
+
     companion object {
         private const val USERNAME_MIN = 4
         private const val USERNAME_MAX = 20
@@ -33,6 +56,15 @@ data class User(
             val password = Password(rawPassword)
             val passwordHash = password.hash()
             return User(username, passwordHash)
+        }
+
+        fun fromDatabase(
+            username: String,
+            passwordHash: String,
+            autoLoginToken: String? = null,
+            tokenExpiresAt: LocalDateTime? = null
+        ): User {
+            return User(username, passwordHash, autoLoginToken, tokenExpiresAt)
         }
     }
 }

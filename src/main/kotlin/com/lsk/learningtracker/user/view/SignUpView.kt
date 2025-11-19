@@ -96,7 +96,6 @@ class SignUpView(
             authService.register(username, password, confirmPassword)
             showMessage("✅ 회원가입 성공!", isError = false)
 
-            // 1초 후 로그인 화면으로 이동
             javafx.application.Platform.runLater {
                 Thread.sleep(1000)
                 onBackToLogin()

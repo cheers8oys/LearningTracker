@@ -21,8 +21,12 @@ class StudyTrackerApp : Application() {
         val userRepository = UserRepository()
         authService = AuthService(userRepository)
 
-        showLoginView()
-    }
+        val autoLoginUser = authService.autoLogin()
+        if (autoLoginUser != null) {
+            showMainView(autoLoginUser)
+        }
+            showLoginView()
+        }
 
     private fun showLoginView() {
         val loginView = LoginView(stage, authService) { user ->
@@ -38,7 +42,6 @@ class StudyTrackerApp : Application() {
     }
 
     override fun stop() {
-        // 앱 종료 시 DB 연결 종료
         DatabaseManager.closeConnection()
         println("✅ 앱 종료")
     }

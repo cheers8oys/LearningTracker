@@ -2,7 +2,6 @@ package com.lsk.learningtracker.user.repository
 
 import com.lsk.learningtracker.user.model.User
 import com.lsk.learningtracker.utils.DatabaseManager
-import java.sql.ResultSet
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -42,7 +41,9 @@ class UserRepository {
                 return if (rs.next()) {
                     User(
                         username = rs.getString("username"),
-                        passwordHash = rs.getString("password")
+                        passwordHash = rs.getString("password"),
+                        autoLoginToken = rs.getString("auto_login_token"),
+                        tokenExpiresAt = parseDateTime(rs.getString("token_expires_at"))
                     )
                 } else {
                     null
@@ -50,6 +51,46 @@ class UserRepository {
             }
         }
     }
+
+    fun findByAutoLoginToken(token: String): User? {
+        val sql = "SELECT * FROM users WHERE auto_login_token = ?"
+
+        DatabaseManager.getConnection().use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, token)
+                val rs = stmt.executeQuery()
+
+                return if (rs.next()) {
+                    User.fromDatabase(
+                        username = rs.getString("username"),
+                        passwordHash = rs.getString("password"),
+                        autoLoginToken = rs.getString("auto_login_token"),
+                        tokenExpiresAt = parseDateTime(rs.getString("token_expires_at"))
+                    )
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
+    fun updateAutoLoginToken(username: String, token: String?, expiresAt: LocalDateTime?) {
+        val sql = """
+            UPDATE users 
+            SET auto_login_token = ?, token_expires_at = ?
+            WHERE username = ?
+        """
+
+        DatabaseManager.getConnection().use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, token)
+                stmt.setString(2, expiresAt?.let { formatDateTime(it) })
+                stmt.setString(3, username)
+                stmt.executeUpdate()
+            }
+        }
+    }
+
 
     fun findAll(): List<User> {
         val sql = "SELECT * FROM users"
@@ -75,5 +116,11 @@ class UserRepository {
 
     private fun formatDateTime(dateTime: LocalDateTime): String {
         return dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+    }
+
+    private fun parseDateTime(dateTimeString: String?): LocalDateTime? {
+        return dateTimeString?.let {
+            LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        }
     }
 }
