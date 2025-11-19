@@ -8,6 +8,8 @@ data class Todo(
     val userId: Long,
     val content: String,
     var status: TodoStatus = TodoStatus.PENDING,
+    var timerSeconds: Int = 0,
+    var completedAt: LocalDateTime? = null,
     val createdDate: LocalDate = LocalDate.now(),
     val createdAt: LocalDateTime = LocalDateTime.now()
 ) {
