@@ -13,23 +13,22 @@ class AuthService(
         require(password == confirmPassword) {
             "비밀번호가 일치하지 않습니다."
         }
-        val user = User(username, password)
+        val user = User.create(username, password)
         return userRepository.save(user)
     }
 
     fun login(username: String, password: String, rememberMe: Boolean): User {
         val user = userRepository.findByUsername(username)
-            ?: throw IllegalArgumentException("아이디 또는 비밀번호가 일치하지 않습니다")
+            ?: throw IllegalArgumentException("존재하지 않는 사용자입니다.")
 
         require(user.matchesPassword(password)) {
-            "아이디 또는 비밀번호가 일치하지 않습니다"
+            "비밀번호가 일치하지 않습니다."
         }
 
         if (rememberMe) {
             val token = user.generateAutoLoginToken()
             userRepository.updateAutoLoginToken(user.username, token.token, token.expiresAt)
             saveTokenToLocal(token.token)
-            println("✅ 자동로그인 토큰 저장: ${token.token}")
         }
 
         return user
@@ -49,8 +48,6 @@ class AuthService(
             userRepository.updateAutoLoginToken(user.username, null, null)
             return null
         }
-
-        println("✅ 자동로그인 성공: ${user.username}")
         return user
     }
 
@@ -58,7 +55,6 @@ class AuthService(
         user.clearAutoLoginToken()
         userRepository.updateAutoLoginToken(user.username, null, null)
         deleteTokenFromLocal()
-        println("✅ 로그아웃: ${user.username}")
     }
 
     private fun saveTokenToLocal(token: String) {

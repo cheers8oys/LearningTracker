@@ -24,8 +24,9 @@ class StudyTrackerApp : Application() {
         val autoLoginUser = authService.autoLogin()
         if (autoLoginUser != null) {
             showMainView(autoLoginUser)
-        }
+        } else {
             showLoginView()
+            }
         }
 
     private fun showLoginView() {
@@ -36,6 +37,7 @@ class StudyTrackerApp : Application() {
     }
     private fun showMainView(user: User) {
         val mainView = MainView(stage, user) {
+            authService.logout(user)
             showLoginView()
         }
         mainView.show()

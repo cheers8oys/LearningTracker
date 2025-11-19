@@ -39,7 +39,7 @@ class UserRepository {
                 val rs = stmt.executeQuery()
 
                 return if (rs.next()) {
-                    User(
+                    User.fromDatabase(
                         username = rs.getString("username"),
                         passwordHash = rs.getString("password"),
                         autoLoginToken = rs.getString("auto_login_token"),
@@ -102,9 +102,11 @@ class UserRepository {
 
                 while (rs.next()) {
                     users.add(
-                        User(
+                        User.fromDatabase(
                             username = rs.getString("username"),
-                            passwordHash = rs.getString("password")
+                            passwordHash = rs.getString("password"),
+                            autoLoginToken = rs.getString("auto_login_token"),
+                            tokenExpiresAt = parseDateTime(rs.getString("token_expires_at"))
                         )
                     )
                 }

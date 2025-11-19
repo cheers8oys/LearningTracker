@@ -47,7 +47,6 @@ class MainView(
     }
 
     private fun handleLogout() {
-        println("✅ ${user.username} 로그아웃")
         onLogout()
     }
 }
