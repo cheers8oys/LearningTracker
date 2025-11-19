@@ -28,9 +28,15 @@ object DatabaseManager {
     }
 
     private fun executeSQL(sql: String) {
+        val statements = sql.split(";")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+
         getConnection().use { conn ->
             conn.createStatement().use { stmt ->
-                stmt.execute(sql)
+                for (statement in statements) {
+                    stmt.execute(statement)
+                }
             }
         }
     }
@@ -45,6 +51,7 @@ object DatabaseManager {
         getConnection().use { conn ->
             conn.createStatement().use { stmt ->
                 stmt.execute("DELETE FROM users")
+                stmt.execute("DELETE FROM todos")
             }
         }
     }
@@ -54,6 +61,7 @@ object DatabaseManager {
         getConnection().use { conn ->
             conn.createStatement().use { stmt ->
                 stmt.execute("DROP TABLE IF EXISTS users")
+                stmt.execute("DROP TABLE IF EXISTS todos")
             }
         }
         initializeDatabase()
