@@ -1,5 +1,7 @@
 package com.lsk.learningtracker
 
+import com.lsk.learningtracker.todo.repository.TodoRepository
+import com.lsk.learningtracker.todo.service.TodoService
 import com.lsk.learningtracker.user.model.User
 import com.lsk.learningtracker.user.repository.UserRepository
 import com.lsk.learningtracker.user.service.AuthService
@@ -13,6 +15,7 @@ class StudyTrackerApp : Application() {
 
     private lateinit var stage: Stage
     private lateinit var authService: AuthService
+    private lateinit var todoService: TodoService
 
     override fun start(stage: Stage) {
         this.stage = stage
@@ -20,6 +23,9 @@ class StudyTrackerApp : Application() {
 
         val userRepository = UserRepository()
         authService = AuthService(userRepository)
+
+        val todoRepository = TodoRepository()
+        todoService = TodoService(todoRepository)
 
         val autoLoginUser = authService.autoLogin()
         if (autoLoginUser != null) {
@@ -36,7 +42,7 @@ class StudyTrackerApp : Application() {
         loginView.show()
     }
     private fun showMainView(user: User) {
-        val mainView = MainView(stage, user) {
+        val mainView = MainView(stage, user, todoService) {
             authService.logout(user)
             showLoginView()
         }
