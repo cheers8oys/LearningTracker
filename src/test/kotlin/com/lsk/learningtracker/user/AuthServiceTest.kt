@@ -50,7 +50,7 @@ class AuthServiceTest {
     @Test
     @DisplayName("로그인 성공")
     fun loginSuccess() {
-        val user = authService.login("pobi1234", "password123")
+        val user = authService.login("pobi1234", "password123", false)
         assertEquals("pobi1234", user.username)
     }
 
@@ -62,7 +62,7 @@ class AuthServiceTest {
     )
     fun loginFailure(username: String, password: String) {
         assertThrows<IllegalArgumentException> {
-            authService.login(username, password)
+            authService.login(username, password, false)
         }
     }
 
