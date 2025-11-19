@@ -55,13 +55,14 @@ class MainView(
         }
 
         val listView = ListView<Todo>(todoList).apply {
-            prefWidth = 450.0
+            prefWidth = 500.0
             prefHeight = 400.0
             cellFactory = javafx.util.Callback {
                 object : ListCell<Todo>() {
                     private val completeButton = Button("완료").apply {
                         style = "-fx-background-color: #4CAF50; -fx-text-fill: white;"
                     }
+                    private val editButton = Button("수정")
                     private val deleteButton = Button("삭제").apply {
                         style = "-fx-background-color: #f44336; -fx-text-fill: white;"
                     }
@@ -70,7 +71,7 @@ class MainView(
 
                     init {
                         hbox.alignment = Pos.CENTER_LEFT
-                        hbox.children.addAll(label, completeButton, deleteButton)
+                        hbox.children.addAll(label, completeButton, editButton, deleteButton)
                     }
 
                     override fun updateItem(item: Todo?, empty: Boolean) {
@@ -89,6 +90,23 @@ class MainView(
                                 todoService.updateTodo(item)
                                 refreshTodoList()
                             }
+
+                            editButton.setOnAction {
+                                val dialog = TextInputDialog(item.content)
+                                dialog.title = "투두 수정"
+                                dialog.headerText = "투두 내용을 수정하세요"
+                                dialog.contentText = "내용:"
+
+                                val result = dialog.showAndWait()
+                                result.ifPresent { newContent ->
+                                    if (newContent.trim().isNotEmpty() && newContent.trim() != item.content) {
+                                        item.content = newContent.trim()
+                                        todoService.updateTodo(item)
+                                        refreshTodoList()
+                                    }
+                                }
+                            }
+
                             deleteButton.setOnAction {
                                 todoService.deleteTodo(item.id)
                                 refreshTodoList()
@@ -111,7 +129,7 @@ class MainView(
 
         refreshTodoList()
 
-        val scene = Scene(root, 500.0, 550.0)
+        val scene = Scene(root, 550.0, 600.0)
         stage.scene = scene
         stage.title = "학습 Tracker - 투두리스트"
         stage.show()

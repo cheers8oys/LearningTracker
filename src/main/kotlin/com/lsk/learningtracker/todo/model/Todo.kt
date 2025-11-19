@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 data class Todo(
     val id: Long = 0,
     val userId: Long,
-    val content: String,
+    var content: String,
     var status: TodoStatus = TodoStatus.PENDING,
     var timerSeconds: Int = 0,
     var completedAt: LocalDateTime? = null,
