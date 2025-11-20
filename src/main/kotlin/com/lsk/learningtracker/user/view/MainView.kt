@@ -124,12 +124,10 @@ class MainView(
 
     private fun handleTimerPause(todo: Todo, elapsedSeconds: Int) {
         todoController.pauseTimer(todo, elapsedSeconds)
-        refreshTodoList()
     }
 
     private fun handleTimerReset(todo: Todo) {
         todoController.resetTimer(todo)
-        refreshTodoList()
     }
 
     private fun handleComplete(todo: Todo) {

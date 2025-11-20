@@ -124,11 +124,23 @@ class TodoListCell(
         label.text = "[${todo.status}] ${todo.content}"
         graphic = hbox
 
-        initializeTimer(todo)
+        initializeTimerIfNeeded(todo)
         updateButtonStates(todo)
     }
 
-    private fun initializeTimer(todo: Todo) {
+    private fun initializeTimerIfNeeded(todo: Todo) {
+        val currentManager = timerManager
+
+        when {
+            currentManager == null -> createNewTimer(todo)
+            currentManager.isRunning() -> {}
+            else -> {
+                currentManager.setElapsedSeconds(todo.timerSeconds)
+            }
+        }
+    }
+
+    private fun createNewTimer(todo: Todo) {
         timerManager = TodoTimerManager(timerLabel) { }
         timerManager?.setElapsedSeconds(todo.timerSeconds)
     }
