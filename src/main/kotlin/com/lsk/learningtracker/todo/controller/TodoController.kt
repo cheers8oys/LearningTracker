@@ -1,9 +1,9 @@
 package com.lsk.learningtracker.todo.controller
 
-import com.lsk.learningtracker.todo.filter.TodoFilter
+import com.lsk.learningtracker.todo.enums.TodoFilter
 import com.lsk.learningtracker.todo.filter.TodoFilterManager
 import com.lsk.learningtracker.todo.model.Todo
-import com.lsk.learningtracker.todo.model.TodoStatus
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.todo.service.TodoService
 import com.lsk.learningtracker.todo.timer.ActiveTimerManager
 import com.lsk.learningtracker.todo.timer.TimerException

@@ -1,7 +1,7 @@
 package com.lsk.learningtracker.user.view
 
 import com.lsk.learningtracker.todo.controller.TodoController
-import com.lsk.learningtracker.todo.filter.TodoFilter
+import com.lsk.learningtracker.todo.enums.TodoFilter
 import com.lsk.learningtracker.todo.filter.TodoFilterManager
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.service.TodoService

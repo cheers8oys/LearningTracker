@@ -1,6 +1,6 @@
 package com.lsk.learningtracker.todo
 
-import com.lsk.learningtracker.todo.model.TodoStatus
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.todo.repository.TodoRepository
 import com.lsk.learningtracker.todo.service.TodoService
 import com.lsk.learningtracker.utils.DatabaseManager

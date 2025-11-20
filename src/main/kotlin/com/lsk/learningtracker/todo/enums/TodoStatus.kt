@@ -1,4 +1,4 @@
-package com.lsk.learningtracker.todo.model
+package com.lsk.learningtracker.todo.enums
 
 enum class TodoStatus {
     PENDING,

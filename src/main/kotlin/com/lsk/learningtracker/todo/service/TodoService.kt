@@ -1,5 +1,6 @@
 package com.lsk.learningtracker.todo.service
 
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.repository.TodoRepository
 import java.time.LocalDateTime
@@ -11,7 +12,7 @@ class TodoService(
         val todo = Todo(
             userId = userId,
             content = content,
-            status = com.lsk.learningtracker.todo.model.TodoStatus.PENDING,
+            status = TodoStatus.PENDING,
             createdDate = java.time.LocalDate.now(),
             createdAt = LocalDateTime.now()
         )

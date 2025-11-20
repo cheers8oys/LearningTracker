@@ -1,4 +1,4 @@
-package com.lsk.learningtracker.todo.filter
+package com.lsk.learningtracker.todo.enums
 
 enum class TodoFilter(val displayName: String) {
     ALL("전체"),

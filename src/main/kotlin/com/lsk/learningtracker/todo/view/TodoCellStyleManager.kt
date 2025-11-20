@@ -1,6 +1,6 @@
 package com.lsk.learningtracker.todo.view.style
 
-import com.lsk.learningtracker.todo.model.TodoStatus
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import javafx.scene.control.Button
 import javafx.scene.control.Label
 

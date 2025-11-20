@@ -1,7 +1,7 @@
 package com.lsk.learningtracker.todo.repository
 
 import com.lsk.learningtracker.todo.model.Todo
-import com.lsk.learningtracker.todo.model.TodoStatus
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.utils.DatabaseManager
 import java.sql.ResultSet
 import java.time.LocalDate

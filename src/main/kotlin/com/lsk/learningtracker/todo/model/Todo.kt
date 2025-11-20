@@ -1,5 +1,6 @@
 package com.lsk.learningtracker.todo.model
 
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
 

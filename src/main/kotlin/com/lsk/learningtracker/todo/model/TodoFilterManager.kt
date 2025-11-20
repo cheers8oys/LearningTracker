@@ -1,7 +1,8 @@
 package com.lsk.learningtracker.todo.filter
 
+import com.lsk.learningtracker.todo.enums.TodoFilter
 import com.lsk.learningtracker.todo.model.Todo
-import com.lsk.learningtracker.todo.model.TodoStatus
+import com.lsk.learningtracker.todo.enums.TodoStatus
 
 class TodoFilterManager {
 

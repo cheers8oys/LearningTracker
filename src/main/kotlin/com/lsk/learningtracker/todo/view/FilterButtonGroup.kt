@@ -1,6 +1,6 @@
 package com.lsk.learningtracker.todo.view
 
-import com.lsk.learningtracker.todo.filter.TodoFilter
+import com.lsk.learningtracker.todo.enums.TodoFilter
 import javafx.geometry.Pos
 import javafx.scene.control.ToggleButton
 import javafx.scene.control.ToggleGroup

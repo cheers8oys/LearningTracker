@@ -1,7 +1,7 @@
 package com.lsk.learningtracker.todo.view
 
 import com.lsk.learningtracker.todo.model.Todo
-import com.lsk.learningtracker.todo.model.TodoStatus
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.todo.timer.TimerException
 import com.lsk.learningtracker.todo.timer.TodoTimerManager
 import com.lsk.learningtracker.todo.view.style.TodoCellStyleManager
