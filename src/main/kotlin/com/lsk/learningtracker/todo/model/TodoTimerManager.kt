@@ -1,11 +1,13 @@
-package com.lsk.learningtracker.todo.model
+package com.lsk.learningtracker.todo.timer
 
+import com.lsk.learningtracker.utils.TimeFormatter
 import javafx.animation.AnimationTimer
 import javafx.scene.control.Label
 
 class TodoTimerManager(
     private val timerLabel: Label,
-    private val onTimerUpdate: (Int) -> Unit
+    private val onTimerUpdate: (Int) -> Unit,
+    private val onTimerStateChange: (Boolean) -> Unit
 ) {
     private var timerRunning = false
     private var startTimeNs: Long = 0L
@@ -17,6 +19,7 @@ class TodoTimerManager(
 
         timerRunning = true
         startTimeNs = System.nanoTime()
+        onTimerStateChange(true)
 
         animationTimer = object : AnimationTimer() {
             override fun handle(now: Long) {
@@ -38,6 +41,7 @@ class TodoTimerManager(
 
         updateTimerDisplay(elapsedSeconds)
         onTimerUpdate(elapsedSeconds)
+        onTimerStateChange(false)
         return elapsedSeconds
     }
 
@@ -53,6 +57,7 @@ class TodoTimerManager(
         animationTimer?.stop()
         animationTimer = null
         timerRunning = false
+        onTimerStateChange(false)
     }
 
     fun setElapsedSeconds(seconds: Int) {
@@ -63,8 +68,6 @@ class TodoTimerManager(
     fun isRunning(): Boolean = timerRunning
 
     private fun updateTimerDisplay(seconds: Int) {
-        val min = seconds / 60
-        val sec = seconds % 60
-        timerLabel.text = String.format("%02d:%02d", min, sec)
+        timerLabel.text = TimeFormatter.formatSeconds(seconds)
     }
 }

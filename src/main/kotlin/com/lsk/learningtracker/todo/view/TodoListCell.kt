@@ -2,7 +2,8 @@ package com.lsk.learningtracker.todo.view
 
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.model.TodoStatus
-import com.lsk.learningtracker.todo.model.TodoTimerManager
+import com.lsk.learningtracker.todo.timer.TodoTimerManager
+import com.lsk.learningtracker.todo.view.style.TodoCellStyleManager
 import javafx.geometry.Pos
 import javafx.scene.control.Button
 import javafx.scene.control.Label
@@ -22,15 +23,12 @@ class TodoListCell(
     private val timerLabel = Label()
     private val startPauseButton = Button("시작")
     private val resetButton = Button("초기화")
-    private val completeButton = Button("완료").apply {
-        style = "-fx-background-color: #4CAF50; -fx-text-fill: white;"
-    }
+    private val completeButton = Button("완료")
     private val editButton = Button("수정")
-    private val deleteButton = Button("삭제").apply {
-        style = "-fx-background-color: #f44336; -fx-text-fill: white;"
-    }
+    private val deleteButton = Button("삭제")
     private val hbox = HBox(10.0)
 
+    private val styleManager = TodoCellStyleManager()
     private var timerManager: TodoTimerManager? = null
 
     init {
@@ -45,7 +43,13 @@ class TodoListCell(
             deleteButton
         )
 
+        applyInitialStyles()
         setupButtonHandlers()
+    }
+
+    private fun applyInitialStyles() {
+        styleManager.applyCompleteButtonStyle(completeButton)
+        styleManager.applyDeleteButtonStyle(deleteButton)
     }
 
     private fun setupButtonHandlers() {
@@ -124,6 +128,7 @@ class TodoListCell(
         label.text = "[${todo.status}] ${todo.content}"
         graphic = hbox
 
+        styleManager.applyStatusStyle(label, todo.status)
         initializeTimerIfNeeded(todo)
         updateButtonStates(todo)
     }
@@ -141,8 +146,20 @@ class TodoListCell(
     }
 
     private fun createNewTimer(todo: Todo) {
-        timerManager = TodoTimerManager(timerLabel) { }
+        timerManager = TodoTimerManager(
+            timerLabel = timerLabel,
+            onTimerUpdate = { },
+            onTimerStateChange = { isRunning -> updateTimerStyle(isRunning) }
+        )
         timerManager?.setElapsedSeconds(todo.timerSeconds)
+        updateTimerStyle(false)
+    }
+
+    private fun updateTimerStyle(isRunning: Boolean) {
+        when {
+            isRunning -> styleManager.applyTimerRunningStyle(timerLabel, startPauseButton)
+            else -> styleManager.applyTimerStoppedStyle(timerLabel, startPauseButton)
+        }
     }
 
     private fun updateButtonStates(todo: Todo) {
@@ -154,8 +171,17 @@ class TodoListCell(
         editButton.isDisable = isCompleted
 
         when {
-            isCompleted -> stopTimerIfRunning()
+            isCompleted -> {
+                stopTimerIfRunning()
+                applyCompletedStyles()
+            }
         }
+    }
+
+    private fun applyCompletedStyles() {
+        styleManager.applyDisabledButtonStyle(startPauseButton)
+        styleManager.applyDisabledButtonStyle(resetButton)
+        styleManager.applyDisabledButtonStyle(editButton)
     }
 
     private fun stopTimerIfRunning() {
