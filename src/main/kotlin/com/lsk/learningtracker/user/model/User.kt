@@ -3,68 +3,52 @@ package com.lsk.learningtracker.user.model
 import java.time.LocalDateTime
 
 data class User(
+    val id: Long = 0,
     val username: String,
-    private val passwordHash: String,
-    var autoLoginToken: String? = null,
-    var tokenExpiresAt: LocalDateTime? = null
+    val password: String,
+    val autoLoginToken: String? = null,
+    val tokenExpiresAt: LocalDateTime? = null,
+    val createdAt: LocalDateTime = LocalDateTime.now()
 ) {
-    init {
-        validateUsername()
-    }
-
-    private fun validateUsername() {
-        require(username.length in USERNAME_MIN..USERNAME_MAX) {
-            "username은 ${USERNAME_MIN}-${USERNAME_MAX}자여야 합니다."
-        }
-        require(username.all { it.isLetterOrDigit() }) {
-            "username은 영문과 숫자만 가능합니다."
-        }
-    }
-
     fun matchesPassword(rawPassword: String): Boolean {
-        return Password.matches(rawPassword, passwordHash)
+        return Password.matches(rawPassword, this.password)
     }
 
-    fun getPasswordHash(): String? {
-        return passwordHash
+    fun updateAutoLoginToken(token: String, expiresAt: LocalDateTime): User {
+        return this.copy(
+            autoLoginToken = token,
+            tokenExpiresAt = expiresAt
+        )
     }
 
-    fun generateAutoLoginToken(): AutoLoginToken {
-        val token = AutoLoginToken()
-        this.autoLoginToken = token.token
-        this.tokenExpiresAt = token.expiresAt
-        return token
-    }
-
-    fun clearAutoLoginToken() {
-        this.autoLoginToken = null
-        this.tokenExpiresAt = null
-    }
-
-    fun hasValidAutoLoginToken(): Boolean {
-        if (autoLoginToken == null || tokenExpiresAt == null) {
-            return false
-        }
-        return LocalDateTime.now().isBefore(tokenExpiresAt)
+    fun clearAutoLoginToken(): User {
+        return this.copy(
+            autoLoginToken = null,
+            tokenExpiresAt = null
+        )
     }
 
     companion object {
-        private const val USERNAME_MIN = 4
-        private const val USERNAME_MAX = 20
+        private const val MIN_USERNAME_LENGTH = 4
+        private const val MAX_USERNAME_LENGTH = 20
+        private val USERNAME_PATTERN = Regex("^[a-zA-Z0-9]+$")
 
         fun create(username: String, rawPassword: String): User {
-            val password = Password(rawPassword)
-            val passwordHash = password.hash()
-            return User(username, passwordHash)
+            validateUsername(username)
+            val hashedPassword = Password(rawPassword).hash()
+            return User(
+                username = username,
+                password = hashedPassword
+            )
         }
 
-        fun fromDatabase(
-            username: String,
-            passwordHash: String,
-            autoLoginToken: String? = null,
-            tokenExpiresAt: LocalDateTime? = null
-        ): User {
-            return User(username, passwordHash, autoLoginToken, tokenExpiresAt)
+        private fun validateUsername(username: String) {
+            require(username.length in MIN_USERNAME_LENGTH..MAX_USERNAME_LENGTH) {
+                "사용자명은 ${MIN_USERNAME_LENGTH}자 이상 ${MAX_USERNAME_LENGTH}자 이하여야 합니다."
+            }
+            require(USERNAME_PATTERN.matches(username)) {
+                "사용자명은 영문자와 숫자만 포함할 수 있습니다."
+            }
         }
     }
 }

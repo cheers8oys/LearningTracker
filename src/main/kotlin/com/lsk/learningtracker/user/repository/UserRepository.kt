@@ -2,17 +2,13 @@ package com.lsk.learningtracker.user.repository
 
 import com.lsk.learningtracker.user.model.User
 import com.lsk.learningtracker.utils.DatabaseManager
+import java.sql.ResultSet
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class UserRepository {
 
-    fun save(user: User): User {
-
-        if (findByUsername(user.username) != null) {
-            throw IllegalArgumentException("이미 존재하는 사용자 이름입니다.")
-        }
-
+    fun save(user: User) {
         val sql = """
             INSERT INTO users (username, password, created_at)
             VALUES (?, ?, ?)
@@ -21,13 +17,11 @@ class UserRepository {
         DatabaseManager.getConnection().use { conn ->
             conn.prepareStatement(sql).use { stmt ->
                 stmt.setString(1, user.username)
-                stmt.setString(2, user.getPasswordHash())
-                stmt.setString(3, formatDateTime(LocalDateTime.now()))
+                stmt.setString(2, user.password)
+                stmt.setString(3, formatDateTime(user.createdAt))
                 stmt.executeUpdate()
             }
         }
-
-        return user
     }
 
     fun findByUsername(username: String): User? {
@@ -37,60 +31,13 @@ class UserRepository {
             conn.prepareStatement(sql).use { stmt ->
                 stmt.setString(1, username)
                 val rs = stmt.executeQuery()
-
-                return if (rs.next()) {
-                    User.fromDatabase(
-                        username = rs.getString("username"),
-                        passwordHash = rs.getString("password"),
-                        autoLoginToken = rs.getString("auto_login_token"),
-                        tokenExpiresAt = parseDateTime(rs.getString("token_expires_at"))
-                    )
-                } else {
-                    null
+                return when {
+                    rs.next() -> mapToUser(rs)
+                    else -> null
                 }
             }
         }
     }
-
-    fun findByAutoLoginToken(token: String): User? {
-        val sql = "SELECT * FROM users WHERE auto_login_token = ?"
-
-        DatabaseManager.getConnection().use { conn ->
-            conn.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, token)
-                val rs = stmt.executeQuery()
-
-                return if (rs.next()) {
-                    User.fromDatabase(
-                        username = rs.getString("username"),
-                        passwordHash = rs.getString("password"),
-                        autoLoginToken = rs.getString("auto_login_token"),
-                        tokenExpiresAt = parseDateTime(rs.getString("token_expires_at"))
-                    )
-                } else {
-                    null
-                }
-            }
-        }
-    }
-
-    fun updateAutoLoginToken(username: String, token: String?, expiresAt: LocalDateTime?) {
-        val sql = """
-            UPDATE users 
-            SET auto_login_token = ?, token_expires_at = ?
-            WHERE username = ?
-        """
-
-        DatabaseManager.getConnection().use { conn ->
-            conn.prepareStatement(sql).use { stmt ->
-                stmt.setString(1, token)
-                stmt.setString(2, expiresAt?.let { formatDateTime(it) })
-                stmt.setString(3, username)
-                stmt.executeUpdate()
-            }
-        }
-    }
-
 
     fun findAll(): List<User> {
         val sql = "SELECT * FROM users"
@@ -99,21 +46,40 @@ class UserRepository {
         DatabaseManager.getConnection().use { conn ->
             conn.createStatement().use { stmt ->
                 val rs = stmt.executeQuery(sql)
-
                 while (rs.next()) {
-                    users.add(
-                        User.fromDatabase(
-                            username = rs.getString("username"),
-                            passwordHash = rs.getString("password"),
-                            autoLoginToken = rs.getString("auto_login_token"),
-                            tokenExpiresAt = parseDateTime(rs.getString("token_expires_at"))
-                        )
-                    )
+                    users.add(mapToUser(rs))
                 }
             }
         }
-
         return users
+    }
+
+    fun update(user: User) {
+        val sql = """
+            UPDATE users 
+            SET auto_login_token = ?, token_expires_at = ?
+            WHERE username = ?
+        """
+
+        DatabaseManager.getConnection().use { conn ->
+            conn.prepareStatement(sql).use { stmt ->
+                stmt.setString(1, user.autoLoginToken)
+                stmt.setString(2, user.tokenExpiresAt?.let { formatDateTime(it) })
+                stmt.setString(3, user.username)
+                stmt.executeUpdate()
+            }
+        }
+    }
+
+    private fun mapToUser(rs: ResultSet): User {
+        return User(
+            id = rs.getLong("id"),
+            username = rs.getString("username"),
+            password = rs.getString("password"),
+            autoLoginToken = rs.getString("auto_login_token"),
+            tokenExpiresAt = parseDateTime(rs.getString("token_expires_at")),
+            createdAt = parseDateTime(rs.getString("created_at"))!!
+        )
     }
 
     private fun formatDateTime(dateTime: LocalDateTime): String {

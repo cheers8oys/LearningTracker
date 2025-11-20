@@ -2,76 +2,85 @@ package com.lsk.learningtracker.user.service
 
 import com.lsk.learningtracker.user.model.User
 import com.lsk.learningtracker.user.repository.UserRepository
-import java.io.File
+import java.time.LocalDateTime
+import java.util.*
 
 class AuthService(
     private val userRepository: UserRepository
 ) {
-
     fun register(username: String, password: String, confirmPassword: String): User {
+        validatePasswordsMatch(password, confirmPassword)
+        validateUsernameNotExists(username)
 
-        require(password == confirmPassword) {
-            "비밀번호가 일치하지 않습니다."
-        }
         val user = User.create(username, password)
-        return userRepository.save(user)
+        userRepository.save(user)
+        return user
     }
 
     fun login(username: String, password: String, rememberMe: Boolean): User {
-        val user = userRepository.findByUsername(username)
-            ?: throw IllegalArgumentException("존재하지 않는 사용자입니다.")
+        val user = findUserByUsername(username)
+        validatePassword(password, user)
 
-        require(user.matchesPassword(password)) {
-            "비밀번호가 일치하지 않습니다."
+        return when {
+            rememberMe -> issueAutoLoginToken(user)
+            else -> user
         }
-
-        if (rememberMe) {
-            val token = user.generateAutoLoginToken()
-            userRepository.updateAutoLoginToken(user.username, token.token, token.expiresAt)
-            saveTokenToLocal(token.token)
-        }
-
-        return user
     }
 
     fun autoLogin(): User? {
-        val token = loadTokenFromLocal() ?: return null
-
-        val user = userRepository.findByAutoLoginToken(token) ?: run {
-            deleteTokenFromLocal()
-            return null
-        }
-
-        if (!user.hasValidAutoLoginToken()) {
-            deleteTokenFromLocal()
-            user.clearAutoLoginToken()
-            userRepository.updateAutoLoginToken(user.username, null, null)
-            return null
-        }
-        return user
+        val users = userRepository.findAll()
+        val validUser = users.firstOrNull { isAutoLoginTokenValid(it) }
+        return validUser
     }
 
     fun logout(user: User) {
-        user.clearAutoLoginToken()
-        userRepository.updateAutoLoginToken(user.username, null, null)
-        deleteTokenFromLocal()
+        val updatedUser = user.clearAutoLoginToken()
+        userRepository.update(updatedUser)
     }
 
-    private fun saveTokenToLocal(token: String) {
-        File(TOKEN_FILE_PATH).writeText(token)
+    private fun validatePasswordsMatch(password: String, confirmPassword: String) {
+        require(password == confirmPassword) {
+            "비밀번호가 일치하지 않습니다."
+        }
     }
 
-    private fun loadTokenFromLocal(): String? {
-        val file = File(TOKEN_FILE_PATH)
-        return if (file.exists()) file.readText().trim() else null
+    private fun validateUsernameNotExists(username: String) {
+        val existingUser = userRepository.findByUsername(username)
+        require(existingUser == null) {
+            "이미 사용 중인 사용자명입니다."
+        }
     }
 
-    private fun deleteTokenFromLocal() {
-        File(TOKEN_FILE_PATH).delete()
+    private fun findUserByUsername(username: String): User {
+        return userRepository.findByUsername(username)
+            ?: throw IllegalArgumentException("사용자를 찾을 수 없습니다.")
+    }
+
+    private fun validatePassword(rawPassword: String, user: User) {
+        require(user.matchesPassword(rawPassword)) {
+            "비밀번호가 일치하지 않습니다."
+        }
+    }
+
+    private fun issueAutoLoginToken(user: User): User {
+        val token = generateToken()
+        val expiresAt = LocalDateTime.now().plusDays(TOKEN_VALIDITY_DAYS)
+        val updatedUser = user.updateAutoLoginToken(token, expiresAt)
+        userRepository.update(updatedUser)
+        return updatedUser
+    }
+
+    private fun isAutoLoginTokenValid(user: User): Boolean {
+        val token = user.autoLoginToken ?: return false
+        val expiresAt = user.tokenExpiresAt ?: return false
+        return expiresAt.isAfter(LocalDateTime.now())
+    }
+
+    private fun generateToken(): String {
+        return UUID.randomUUID().toString()
     }
 
     companion object {
-        private const val TOKEN_FILE_PATH = "auto_login.token"
+        private const val TOKEN_VALIDITY_DAYS = 30L
     }
-
 }

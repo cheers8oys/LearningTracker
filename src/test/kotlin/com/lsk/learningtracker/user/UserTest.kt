@@ -36,8 +36,7 @@ class UserTest {
     @Test
     @DisplayName("올바른 정보로 User 생성 성공")
     fun createValidUser() {
-
-        val user = User("pobi1234", "password123")
+        val user = User.create("pobi1234", "password123")
         assertEquals("pobi1234", user.username)
     }
 
@@ -45,7 +44,6 @@ class UserTest {
     @DisplayName("username 길이가 범위를 벗어나면 예외 발생")
     @MethodSource("invalidUsernameLengths")
     fun validateUsernameLength(username: String) {
-
         assertThrows<IllegalArgumentException> {
             User.create(username, "password123")
         }
@@ -55,7 +53,6 @@ class UserTest {
     @DisplayName("username에 특수문자나 공백이 포함되면 예외 발생")
     @ValueSource(strings = ["pobi@123", "pobi 123", "pobi!123", "pobi#123"])
     fun validateUsernameFormat(username: String) {
-
         assertThrows<IllegalArgumentException> {
             User.create(username, "password123")
         }
@@ -89,9 +86,8 @@ class UserTest {
     @ParameterizedTest
     @DisplayName("다양한 올바른 username으로 User 생성 성공")
     @ValueSource(strings = ["pobi1234", "test0000", "user9999", "abcd1234"])
-    fun createUserWithValidUsernames(username: String) { // when
-
-        val user = User(username, "password123")
+    fun createUserWithValidUsernames(username: String) {
+        val user = User.create(username, "password123")
         assertEquals(username, user.username)
     }
 }
