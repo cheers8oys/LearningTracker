@@ -1,5 +1,7 @@
 package com.lsk.learningtracker.todo.controller
 
+import com.lsk.learningtracker.todo.filter.TodoFilter
+import com.lsk.learningtracker.todo.filter.TodoFilterManager
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.model.TodoStatus
 import com.lsk.learningtracker.todo.service.TodoService
@@ -10,10 +12,20 @@ import java.time.LocalDateTime
 class TodoController(
     private val userId: Long,
     private val todoService: TodoService,
-    private val activeTimerManager: ActiveTimerManager
+    private val activeTimerManager: ActiveTimerManager,
+    private val filterManager: TodoFilterManager
 ) {
     fun getTodayTodos(): List<Todo> {
-        return todoService.getTodayTodos(userId)
+        val allTodos = todoService.getTodayTodos(userId)
+        return filterManager.applyFilter(allTodos)
+    }
+
+    fun setFilter(filter: TodoFilter) {
+        filterManager.setFilter(filter)
+    }
+
+    fun getCurrentFilter(): TodoFilter {
+        return filterManager.getCurrentFilter()
     }
 
     fun createTodo(content: String): Todo {

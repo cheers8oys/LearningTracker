@@ -1,10 +1,13 @@
 package com.lsk.learningtracker.user.view
 
 import com.lsk.learningtracker.todo.controller.TodoController
+import com.lsk.learningtracker.todo.filter.TodoFilter
+import com.lsk.learningtracker.todo.filter.TodoFilterManager
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.service.TodoService
 import com.lsk.learningtracker.todo.timer.ActiveTimerManager
 import com.lsk.learningtracker.todo.timer.TimerException
+import com.lsk.learningtracker.todo.view.FilterButtonGroup
 import com.lsk.learningtracker.todo.view.TodoListCell
 import com.lsk.learningtracker.user.controller.AuthController
 import com.lsk.learningtracker.user.model.User
@@ -26,21 +29,25 @@ class MainView(
     private val todoList = FXCollections.observableArrayList<Todo>()
     private lateinit var todoController: TodoController
     private lateinit var authController: AuthController
+    private lateinit var filterButtonGroup: FilterButtonGroup
+
     private val activeTimerManager = ActiveTimerManager()
+    private val filterManager = TodoFilterManager()
 
     fun show() {
         initializeControllers()
 
         val root = createRootLayout()
         val inputBox = createTodoInputBox()
+        val filterBox = createFilterBox()
         val listView = createTodoListView()
         val logoutButton = createLogoutButton()
 
-        root.children.addAll(inputBox, listView, logoutButton)
+        root.children.addAll(inputBox, filterBox, listView, logoutButton)
 
         refreshTodoList()
 
-        val scene = Scene(root, 650.0, 600.0)
+        val scene = Scene(root, 650.0, 650.0)
         stage.scene = scene
         stage.title = "학습 Tracker - 투두리스트"
         stage.show()
@@ -49,9 +56,10 @@ class MainView(
     private fun initializeControllers() {
         authController = AuthController(user, onLogout)
         todoController = TodoController(
-            authController.getUserId(),
-            todoService,
-            activeTimerManager
+            userId = authController.getUserId(),
+            todoService = todoService,
+            activeTimerManager = activeTimerManager,
+            filterManager = filterManager
         )
     }
 
@@ -83,6 +91,13 @@ class MainView(
         return HBox(10.0, todoInputField, addButton).apply {
             alignment = Pos.CENTER
         }
+    }
+
+    private fun createFilterBox(): HBox {
+        filterButtonGroup = FilterButtonGroup { filter ->
+            handleFilterChange(filter)
+        }
+        return filterButtonGroup.createFilterBox()
     }
 
     private fun createTodoListView(): ListView<Todo> {
@@ -118,11 +133,16 @@ class MainView(
         when {
             content.isEmpty() -> return
             else -> {
-                val newTodo = todoController.createTodo(content)
-                todoList.add(newTodo)
+                todoController.createTodo(content)
                 inputField.clear()
+                refreshTodoList()
             }
         }
+    }
+
+    private fun handleFilterChange(filter: TodoFilter) {
+        todoController.setFilter(filter)
+        refreshTodoList()
     }
 
     private fun handleTimerStart(todo: Todo) {
