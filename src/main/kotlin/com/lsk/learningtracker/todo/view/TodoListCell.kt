@@ -1,15 +1,13 @@
 package com.lsk.learningtracker.todo.view
 
-import com.lsk.learningtracker.todo.model.Todo
+import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.enums.TodoStatus
+import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.timer.TimerException
 import com.lsk.learningtracker.todo.timer.TodoTimerManager
 import com.lsk.learningtracker.todo.view.style.TodoCellStyleManager
 import javafx.geometry.Pos
-import javafx.scene.control.Alert
-import javafx.scene.control.Button
-import javafx.scene.control.Label
-import javafx.scene.control.ListCell
+import javafx.scene.control.*
 import javafx.scene.layout.HBox
 
 class TodoListCell(
@@ -19,11 +17,17 @@ class TodoListCell(
     private val onComplete: (Todo) -> Unit,
     private val onEdit: (Todo) -> Unit,
     private val onDelete: (Todo) -> Unit,
-    private val onCanStartTimer: (Todo) -> Boolean
+    private val onCanStartTimer: (Todo) -> Boolean,
+    private val onPriorityChange: (Todo, Priority) -> Unit
 ) : ListCell<Todo>() {
 
+    private val priorityLabel = Label()
     private val label = Label()
     private val timerLabel = Label()
+    private val priorityChoice = ChoiceBox<Priority>().apply {
+        items.addAll(Priority.HIGH, Priority.MEDIUM, Priority.LOW)
+        prefWidth = 70.0
+    }
     private val startPauseButton = Button("시작")
     private val resetButton = Button("초기화")
     private val completeButton = Button("완료")
@@ -32,13 +36,16 @@ class TodoListCell(
     private val hbox = HBox(10.0)
 
     private val styleManager = TodoCellStyleManager()
+    private val priorityStyleManager = PriorityStyleManager()
     private var timerManager: TodoTimerManager? = null
 
     init {
         hbox.alignment = Pos.CENTER_LEFT
         hbox.children.addAll(
+            priorityLabel,
             label,
             timerLabel,
+            priorityChoice,
             startPauseButton,
             resetButton,
             completeButton,
@@ -48,11 +55,25 @@ class TodoListCell(
 
         applyInitialStyles()
         setupButtonHandlers()
+        setupPriorityChoiceHandler()
     }
 
     private fun applyInitialStyles() {
         styleManager.applyCompleteButtonStyle(completeButton)
         styleManager.applyDeleteButtonStyle(deleteButton)
+    }
+
+    private fun setupPriorityChoiceHandler() {
+        priorityChoice.setOnAction {
+            val currentItem = item ?: return@setOnAction
+            val selectedPriority = priorityChoice.value ?: return@setOnAction
+
+            when {
+                selectedPriority != currentItem.priority -> {
+                    onPriorityChange(currentItem, selectedPriority)
+                }
+            }
+        }
     }
 
     private fun setupButtonHandlers() {
@@ -151,8 +172,14 @@ class TodoListCell(
     }
 
     private fun renderCell(todo: Todo) {
+        val priorityIcon = priorityStyleManager.getPriorityIcon(todo.priority)
+        priorityLabel.text = priorityIcon
+        priorityStyleManager.applyPriorityStyle(priorityLabel, todo.priority)
+
         label.text = "[${todo.status}] ${todo.content}"
         graphic = hbox
+
+        priorityChoice.value = todo.priority
 
         styleManager.applyStatusStyle(label, todo.status)
         initializeTimerIfNeeded(todo)
@@ -203,6 +230,7 @@ class TodoListCell(
         startPauseButton.isDisable = isCompleted
         resetButton.isDisable = isCompleted
         editButton.isDisable = isCompleted
+        priorityChoice.isDisable = isCompleted
 
         when {
             isCompleted -> {

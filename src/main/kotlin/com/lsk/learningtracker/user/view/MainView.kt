@@ -1,10 +1,12 @@
 package com.lsk.learningtracker.user.view
 
 import com.lsk.learningtracker.todo.controller.TodoController
+import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.enums.TodoFilter
 import com.lsk.learningtracker.todo.filter.TodoFilterManager
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.service.TodoService
+import com.lsk.learningtracker.todo.model.TodoSortManager
 import com.lsk.learningtracker.todo.timer.ActiveTimerManager
 import com.lsk.learningtracker.todo.timer.TimerException
 import com.lsk.learningtracker.todo.view.FilterButtonGroup
@@ -33,6 +35,7 @@ class MainView(
 
     private val activeTimerManager = ActiveTimerManager()
     private val filterManager = TodoFilterManager()
+    private val sortManager = TodoSortManager()
 
     fun show() {
         initializeControllers()
@@ -47,7 +50,7 @@ class MainView(
 
         refreshTodoList()
 
-        val scene = Scene(root, 650.0, 650.0)
+        val scene = Scene(root, 700.0, 650.0)
         stage.scene = scene
         stage.title = "학습 Tracker - 투두리스트"
         stage.show()
@@ -59,7 +62,8 @@ class MainView(
             userId = authController.getUserId(),
             todoService = todoService,
             activeTimerManager = activeTimerManager,
-            filterManager = filterManager
+            filterManager = filterManager,
+            sortManager = sortManager
         )
     }
 
@@ -82,13 +86,19 @@ class MainView(
             prefWidth = 300.0
         }
 
+        val priorityChoice = ChoiceBox<Priority>().apply {
+            items.addAll(Priority.HIGH, Priority.MEDIUM, Priority.LOW)
+            value = Priority.MEDIUM
+            prefWidth = 80.0
+        }
+
         val addButton = Button("추가").apply {
             setOnAction {
-                handleAddTodo(todoInputField)
+                handleAddTodo(todoInputField, priorityChoice)
             }
         }
 
-        return HBox(10.0, todoInputField, addButton).apply {
+        return HBox(10.0, todoInputField, priorityChoice, addButton).apply {
             alignment = Pos.CENTER
         }
     }
@@ -102,7 +112,7 @@ class MainView(
 
     private fun createTodoListView(): ListView<Todo> {
         return ListView<Todo>(todoList).apply {
-            prefWidth = 600.0
+            prefWidth = 650.0
             prefHeight = 400.0
             cellFactory = javafx.util.Callback {
                 TodoListCell(
@@ -112,7 +122,8 @@ class MainView(
                     onComplete = { todo -> handleComplete(todo) },
                     onEdit = { todo -> handleEdit(todo) },
                     onDelete = { todo -> handleDelete(todo) },
-                    onCanStartTimer = { todo -> todoController.canStartTimer(todo) }
+                    onCanStartTimer = { todo -> todoController.canStartTimer(todo) },
+                    onPriorityChange = { todo, priority -> handlePriorityChange(todo, priority) }
                 )
             }
         }
@@ -128,13 +139,16 @@ class MainView(
         }
     }
 
-    private fun handleAddTodo(inputField: TextField) {
+    private fun handleAddTodo(inputField: TextField, priorityChoice: ChoiceBox<Priority>) {
         val content = inputField.text.trim()
+        val priority = priorityChoice.value
+
         when {
             content.isEmpty() -> return
             else -> {
-                todoController.createTodo(content)
+                todoController.createTodo(content, priority)
                 inputField.clear()
+                priorityChoice.value = Priority.MEDIUM
                 refreshTodoList()
             }
         }
@@ -142,6 +156,11 @@ class MainView(
 
     private fun handleFilterChange(filter: TodoFilter) {
         todoController.setFilter(filter)
+        refreshTodoList()
+    }
+
+    private fun handlePriorityChange(todo: Todo, priority: Priority) {
+        todoController.updateTodoPriority(todo, priority)
         refreshTodoList()
     }
 

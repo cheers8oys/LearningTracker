@@ -1,19 +1,22 @@
 package com.lsk.learningtracker.todo.service
 
+import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.repository.TodoRepository
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 class TodoService(
     private val todoRepository: TodoRepository
 ) {
-    fun createTodo(userId: Long, content: String): Todo {
+    fun createTodo(userId: Long, content: String, priority: Priority = Priority.MEDIUM): Todo {
         val todo = Todo(
             userId = userId,
             content = content,
             status = TodoStatus.PENDING,
-            createdDate = java.time.LocalDate.now(),
+            priority = priority,
+            createdDate = LocalDate.now(),
             createdAt = LocalDateTime.now()
         )
         val id = todoRepository.save(todo)

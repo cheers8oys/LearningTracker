@@ -1,9 +1,11 @@
 package com.lsk.learningtracker.todo.controller
 
+import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.enums.TodoFilter
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.todo.filter.TodoFilterManager
 import com.lsk.learningtracker.todo.model.Todo
-import com.lsk.learningtracker.todo.enums.TodoStatus
+import com.lsk.learningtracker.todo.model.TodoSortManager
 import com.lsk.learningtracker.todo.service.TodoService
 import com.lsk.learningtracker.todo.timer.ActiveTimerManager
 import com.lsk.learningtracker.todo.timer.TimerException
@@ -13,11 +15,13 @@ class TodoController(
     private val userId: Long,
     private val todoService: TodoService,
     private val activeTimerManager: ActiveTimerManager,
-    private val filterManager: TodoFilterManager
+    private val filterManager: TodoFilterManager,
+    private val sortManager: TodoSortManager
 ) {
     fun getTodayTodos(): List<Todo> {
         val allTodos = todoService.getTodayTodos(userId)
-        return filterManager.applyFilter(allTodos)
+        val filteredTodos = filterManager.applyFilter(allTodos)
+        return sortManager.sortByPriority(filteredTodos)
     }
 
     fun setFilter(filter: TodoFilter) {
@@ -28,12 +32,17 @@ class TodoController(
         return filterManager.getCurrentFilter()
     }
 
-    fun createTodo(content: String): Todo {
-        return todoService.createTodo(userId, content)
+    fun createTodo(content: String, priority: Priority = Priority.MEDIUM): Todo {
+        return todoService.createTodo(userId, content, priority)
     }
 
     fun updateTodoContent(todo: Todo, newContent: String) {
         todo.content = newContent.trim()
+        todoService.updateTodo(todo)
+    }
+
+    fun updateTodoPriority(todo: Todo, priority: Priority) {
+        todo.priority = priority
         todoService.updateTodo(todo)
     }
 

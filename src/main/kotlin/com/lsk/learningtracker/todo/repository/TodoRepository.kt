@@ -1,7 +1,8 @@
 package com.lsk.learningtracker.todo.repository
 
-import com.lsk.learningtracker.todo.model.Todo
+import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.enums.TodoStatus
+import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.utils.DatabaseManager
 import java.sql.ResultSet
 import java.time.LocalDate
@@ -12,16 +13,18 @@ class TodoRepository {
 
     fun save(todo: Todo): Long {
         val sql = """
-            INSERT INTO todos (user_id, content, status, created_date, created_at)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO todos (user_id, content, status, priority, created_date, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
         """
+
         DatabaseManager.getConnection().use { conn ->
             conn.prepareStatement(sql).use { stmt ->
                 stmt.setLong(1, todo.userId)
                 stmt.setString(2, todo.content)
                 stmt.setString(3, todo.status.name)
-                stmt.setString(4, formatDate(todo.createdDate))
-                stmt.setString(5, formatDateTime(todo.createdAt))
+                stmt.setString(4, todo.priority.name)
+                stmt.setString(5, formatDate(todo.createdDate))
+                stmt.setString(6, formatDateTime(todo.createdAt))
                 stmt.executeUpdate()
             }
             conn.createStatement().use { stmt ->
@@ -60,16 +63,17 @@ class TodoRepository {
     fun update(todo: Todo) {
         val sql = """
             UPDATE todos 
-            SET content = ?, status = ?, timer_seconds = ?, completed_at = ?
+            SET content = ?, status = ?, priority = ?, timer_seconds = ?, completed_at = ?
             WHERE id = ?
         """
         DatabaseManager.getConnection().use { conn ->
             conn.prepareStatement(sql).use { stmt ->
                 stmt.setString(1, todo.content)
                 stmt.setString(2, todo.status.name)
-                stmt.setInt(3, todo.timerSeconds)
-                stmt.setString(4, todo.completedAt?.let { formatDateTime(it) })
-                stmt.setLong(5, todo.id)
+                stmt.setString(3, todo.priority.name)
+                stmt.setInt(4, todo.timerSeconds)
+                stmt.setString(5, todo.completedAt?.let { formatDateTime(it) })
+                stmt.setLong(6, todo.id)
                 stmt.executeUpdate()
             }
         }
@@ -91,6 +95,7 @@ class TodoRepository {
             userId = rs.getLong("user_id"),
             content = rs.getString("content"),
             status = TodoStatus.valueOf(rs.getString("status")),
+            priority = Priority.valueOf(rs.getString("priority")),
             timerSeconds = rs.getInt("timer_seconds"),
             completedAt = parseDateTime(rs.getString("completed_at")),
             createdDate = parseDate(rs.getString("created_date")),

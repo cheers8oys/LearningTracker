@@ -1,5 +1,6 @@
 package com.lsk.learningtracker.todo.model
 
+import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.enums.TodoStatus
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -9,6 +10,7 @@ data class Todo(
     val userId: Long,
     var content: String,
     var status: TodoStatus = TodoStatus.PENDING,
+    var priority: Priority = Priority.MEDIUM,
     var timerSeconds: Int = 0,
     var completedAt: LocalDateTime? = null,
     val createdDate: LocalDate = LocalDate.now(),
