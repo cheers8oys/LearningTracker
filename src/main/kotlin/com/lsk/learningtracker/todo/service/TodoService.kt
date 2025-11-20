@@ -30,4 +30,11 @@ class TodoService(
     fun deleteTodo(todoId: Long) {
         todoRepository.delete(todoId)
     }
+
+    fun updateTimerSeconds(userId: Long, todoId: Long, seconds: Int) {
+        val todos = getTodayTodos(userId)
+        val todo = todos.find { it.id == todoId } ?: throw IllegalArgumentException("해당 투두 없음")
+        todo.timerSeconds = seconds
+        updateTodo(todo)
+    }
 }
