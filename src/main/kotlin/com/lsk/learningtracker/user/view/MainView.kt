@@ -3,6 +3,8 @@ package com.lsk.learningtracker.user.view
 import com.lsk.learningtracker.todo.controller.TodoController
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.service.TodoService
+import com.lsk.learningtracker.todo.timer.ActiveTimerManager
+import com.lsk.learningtracker.todo.timer.TimerException
 import com.lsk.learningtracker.todo.view.TodoListCell
 import com.lsk.learningtracker.user.controller.AuthController
 import com.lsk.learningtracker.user.model.User
@@ -24,6 +26,7 @@ class MainView(
     private val todoList = FXCollections.observableArrayList<Todo>()
     private lateinit var todoController: TodoController
     private lateinit var authController: AuthController
+    private val activeTimerManager = ActiveTimerManager()
 
     fun show() {
         initializeControllers()
@@ -45,7 +48,11 @@ class MainView(
 
     private fun initializeControllers() {
         authController = AuthController(user, onLogout)
-        todoController = TodoController(authController.getUserId(), todoService)
+        todoController = TodoController(
+            authController.getUserId(),
+            todoService,
+            activeTimerManager
+        )
     }
 
     private fun createRootLayout(): VBox {
@@ -89,7 +96,8 @@ class MainView(
                     onTimerReset = { todo -> handleTimerReset(todo) },
                     onComplete = { todo -> handleComplete(todo) },
                     onEdit = { todo -> handleEdit(todo) },
-                    onDelete = { todo -> handleDelete(todo) }
+                    onDelete = { todo -> handleDelete(todo) },
+                    onCanStartTimer = { todo -> todoController.canStartTimer(todo) }
                 )
             }
         }
@@ -118,16 +126,28 @@ class MainView(
     }
 
     private fun handleTimerStart(todo: Todo) {
-        todoController.startTimer(todo)
-        refreshTodoList()
+        try {
+            todoController.startTimer(todo)
+            refreshTodoList()
+        } catch (e: TimerException.AlreadyRunningException) {
+            showError("타이머 실행 불가", e.message ?: "다른 타이머가 실행 중입니다.")
+        }
     }
 
     private fun handleTimerPause(todo: Todo, elapsedSeconds: Int) {
-        todoController.pauseTimer(todo, elapsedSeconds)
+        try {
+            todoController.pauseTimer(todo, elapsedSeconds)
+        } catch (e: TimerException.SaveFailedException) {
+            showError("저장 실패", "타이머 저장에 실패했습니다.")
+        }
     }
 
     private fun handleTimerReset(todo: Todo) {
-        todoController.resetTimer(todo)
+        try {
+            todoController.resetTimer(todo)
+        } catch (e: TimerException.SaveFailedException) {
+            showError("초기화 실패", "타이머 초기화에 실패했습니다.")
+        }
     }
 
     private fun handleComplete(todo: Todo) {
@@ -161,6 +181,14 @@ class MainView(
 
         val result = dialog.showAndWait()
         return result.orElse(null)
+    }
+
+    private fun showError(title: String, message: String) {
+        val alert = Alert(Alert.AlertType.ERROR)
+        alert.title = title
+        alert.headerText = null
+        alert.contentText = message
+        alert.showAndWait()
     }
 
     private fun refreshTodoList() {

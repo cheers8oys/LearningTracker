@@ -2,9 +2,11 @@ package com.lsk.learningtracker.todo.view
 
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.model.TodoStatus
+import com.lsk.learningtracker.todo.timer.TimerException
 import com.lsk.learningtracker.todo.timer.TodoTimerManager
 import com.lsk.learningtracker.todo.view.style.TodoCellStyleManager
 import javafx.geometry.Pos
+import javafx.scene.control.Alert
 import javafx.scene.control.Button
 import javafx.scene.control.Label
 import javafx.scene.control.ListCell
@@ -16,7 +18,8 @@ class TodoListCell(
     private val onTimerReset: (Todo) -> Unit,
     private val onComplete: (Todo) -> Unit,
     private val onEdit: (Todo) -> Unit,
-    private val onDelete: (Todo) -> Unit
+    private val onDelete: (Todo) -> Unit,
+    private val onCanStartTimer: (Todo) -> Boolean
 ) : ListCell<Todo>() {
 
     private val label = Label()
@@ -88,6 +91,13 @@ class TodoListCell(
     }
 
     private fun handleStart(todo: Todo, manager: TodoTimerManager) {
+        when {
+            !onCanStartTimer(todo) -> {
+                showWarning("다른 타이머가 실행 중입니다", "하나의 타이머만 실행할 수 있습니다.")
+                return
+            }
+        }
+
         manager.start()
         startPauseButton.text = "일시정지"
         onTimerStart(todo)
@@ -106,6 +116,22 @@ class TodoListCell(
             onTimerPause(todo, elapsed)
         }
         onComplete(todo)
+    }
+
+    private fun showWarning(title: String, message: String) {
+        val alert = Alert(Alert.AlertType.WARNING)
+        alert.title = title
+        alert.headerText = null
+        alert.contentText = message
+        alert.showAndWait()
+    }
+
+    private fun showError(title: String, message: String) {
+        val alert = Alert(Alert.AlertType.ERROR)
+        alert.title = title
+        alert.headerText = null
+        alert.contentText = message
+        alert.showAndWait()
     }
 
     override fun updateItem(item: Todo?, empty: Boolean) {
@@ -149,10 +175,18 @@ class TodoListCell(
         timerManager = TodoTimerManager(
             timerLabel = timerLabel,
             onTimerUpdate = { },
-            onTimerStateChange = { isRunning -> updateTimerStyle(isRunning) }
+            onTimerStateChange = { isRunning -> updateTimerStyle(isRunning) },
+            onError = { exception -> handleTimerError(exception) }
         )
         timerManager?.setElapsedSeconds(todo.timerSeconds)
         updateTimerStyle(false)
+    }
+
+    private fun handleTimerError(exception: Exception) {
+        when (exception) {
+            is TimerException -> showError("타이머 오류", exception.message ?: "알 수 없는 오류")
+            else -> showError("오류", "타이머 작동 중 오류가 발생했습니다.")
+        }
     }
 
     private fun updateTimerStyle(isRunning: Boolean) {
