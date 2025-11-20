@@ -4,6 +4,7 @@ import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.model.TodoStatus
 import com.lsk.learningtracker.todo.service.TodoService
 import com.lsk.learningtracker.user.model.User
+import javafx.animation.AnimationTimer
 import javafx.collections.FXCollections
 import javafx.geometry.Insets
 import javafx.geometry.Pos
@@ -55,10 +56,13 @@ class MainView(
         }
 
         val listView = ListView<Todo>(todoList).apply {
-            prefWidth = 500.0
+            prefWidth = 600.0
             prefHeight = 400.0
             cellFactory = javafx.util.Callback {
                 object : ListCell<Todo>() {
+                    private val timerLabel = Label()
+                    private val startPauseButton = Button("시작")
+                    private val resetButton = Button("초기화")
                     private val completeButton = Button("완료").apply {
                         style = "-fx-background-color: #4CAF50; -fx-text-fill: white;"
                     }
@@ -69,9 +73,80 @@ class MainView(
                     private val hbox = HBox(10.0)
                     private val label = Label()
 
+                    private var timerRunning = false
+                    private var startTimeNs: Long = 0L
+                    private var animationTimer: AnimationTimer? = null
+                    private var elapsedSeconds = 0
+
                     init {
                         hbox.alignment = Pos.CENTER_LEFT
-                        hbox.children.addAll(label, completeButton, editButton, deleteButton)
+                        hbox.children.addAll(label, timerLabel, startPauseButton, resetButton, completeButton, editButton, deleteButton)
+
+                        startPauseButton.setOnAction {
+                            if (!timerRunning) {
+                                startTimer()
+                            } else {
+                                pauseTimer()
+                            }
+                        }
+                        resetButton.setOnAction {
+                            resetTimer()
+                        }
+                    }
+
+                    private fun startTimer() {
+                        val currentItem = item ?: return
+
+                        if (currentItem.status == TodoStatus.PENDING) {
+                            currentItem.status = TodoStatus.IN_PROGRESS
+                            todoService.updateTodo(currentItem)
+                            refreshTodoList()
+                        }
+
+                        timerRunning = true
+                        startPauseButton.text = "일시정지"
+                        startTimeNs = System.nanoTime()
+
+                        animationTimer = object : AnimationTimer() {
+                            override fun handle(now: Long) {
+                                val delta = (now - startTimeNs) / 1_000_000_000
+                                timerLabel.text = formatSeconds(elapsedSeconds + delta.toInt())
+                            }
+                        }.also { it.start() }
+                    }
+
+                    private fun pauseTimer() {
+                        timerRunning = false
+                        startPauseButton.text = "시작"
+                        animationTimer?.stop()
+                        animationTimer = null
+
+                        val delta = ((System.nanoTime() - startTimeNs) / 1_000_000_000).toInt()
+                        elapsedSeconds += delta
+
+                        timerLabel.text = formatSeconds(elapsedSeconds)
+                        val currentItem = item ?: return
+                        todoService.updateTimerSeconds(user.username.hashCode().toLong(), currentItem.id, elapsedSeconds)
+                        refreshTodoList()
+                    }
+
+                    private fun resetTimer() {
+                        animationTimer?.stop()
+                        animationTimer = null
+                        timerRunning = false
+                        startPauseButton.text = "시작"
+                        elapsedSeconds = 0
+                        timerLabel.text = formatSeconds(0)
+
+                        val currentItem = item ?: return
+                        todoService.updateTimerSeconds(user.username.hashCode().toLong(), currentItem.id, 0)
+                        refreshTodoList()
+                    }
+
+                    private fun formatSeconds(seconds: Int): String {
+                        val min = seconds / 60
+                        val sec = seconds % 60
+                        return String.format("%02d:%02d", min, sec)
                     }
 
                     override fun updateItem(item: Todo?, empty: Boolean) {
@@ -79,12 +154,39 @@ class MainView(
                         if (empty || item == null) {
                             text = null
                             graphic = null
+                            animationTimer?.stop()
+                            animationTimer = null
                         } else {
                             label.text = "[${item.status}] ${item.content}"
+                            elapsedSeconds = item.timerSeconds
+                            timerLabel.text = formatSeconds(elapsedSeconds)
                             graphic = hbox
 
-                            completeButton.isDisable = item.status == TodoStatus.COMPLETED
+                            val isCompleted = item.status == TodoStatus.COMPLETED
+                            completeButton.isDisable = isCompleted
+                            startPauseButton.isDisable = isCompleted
+                            resetButton.isDisable = isCompleted
+                            editButton.isDisable = isCompleted
+
+                            if (isCompleted && timerRunning) {
+                                animationTimer?.stop()
+                                animationTimer = null
+                                timerRunning = false
+                                startPauseButton.text = "시작"
+                            }
+
                             completeButton.setOnAction {
+                                if (timerRunning) {
+                                    animationTimer?.stop()
+                                    animationTimer = null
+                                    timerRunning = false
+                                    startPauseButton.text = "시작"
+
+                                    val delta = ((System.nanoTime() - startTimeNs) / 1_000_000_000).toInt()
+                                    elapsedSeconds += delta
+                                    todoService.updateTimerSeconds(user.username.hashCode().toLong(), item.id, elapsedSeconds)
+                                }
+
                                 item.status = TodoStatus.COMPLETED
                                 item.completedAt = java.time.LocalDateTime.now()
                                 todoService.updateTodo(item)
@@ -129,14 +231,14 @@ class MainView(
 
         refreshTodoList()
 
-        val scene = Scene(root, 550.0, 600.0)
+        val scene = Scene(root, 650.0, 600.0)
         stage.scene = scene
         stage.title = "학습 Tracker - 투두리스트"
         stage.show()
     }
 
     private fun refreshTodoList() {
-        val todos = todoService.getTodayTodos(userId = user.username.hashCode().toLong())
+        val todos = todoService.getTodayTodos(user.username.hashCode().toLong())
         todoList.setAll(todos)
     }
 }
