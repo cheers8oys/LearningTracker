@@ -28,12 +28,11 @@ class StudyTrackerApp : Application() {
         todoService = TodoService(todoRepository)
 
         val autoLoginUser = authService.autoLogin()
-        if (autoLoginUser != null) {
-            showMainView(autoLoginUser)
-        } else {
-            showLoginView()
-            }
+        when {
+            autoLoginUser != null -> showMainView(autoLoginUser)
+            else -> showLoginView()
         }
+    }
 
     private fun showLoginView() {
         val loginView = LoginView(stage, authService) { user ->
@@ -41,6 +40,7 @@ class StudyTrackerApp : Application() {
         }
         loginView.show()
     }
+
     private fun showMainView(user: User) {
         val mainView = MainView(stage, user, todoService) {
             authService.logout(user)
