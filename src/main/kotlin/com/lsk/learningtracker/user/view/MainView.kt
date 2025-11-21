@@ -6,6 +6,7 @@ import com.lsk.learningtracker.todo.controller.TodoController
 import com.lsk.learningtracker.todo.enums.TodoFilter
 import com.lsk.learningtracker.todo.filter.TodoFilterManager
 import com.lsk.learningtracker.todo.enums.Priority
+import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.model.TodoSortManager
 import com.lsk.learningtracker.todo.service.TodoService
@@ -201,7 +202,8 @@ class MainView(
                     onEdit = { todo -> handleEdit(todo) },
                     onDelete = { todo -> handleDelete(todo) },
                     onCanStartTimer = { todo -> todoController.canStartTimer(todo) },
-                    onPriorityChange = { todo, priority -> handlePriorityChange(todo, priority) }
+                    onPriorityChange = { todo, priority -> handlePriorityChange(todo, priority) },
+                    getActiveTimerId = { todoController.getActiveTimerId() }
                 )
             }
         }
@@ -270,6 +272,7 @@ class MainView(
         try {
             todoController.pauseTimer(todo, elapsedSeconds)
             updateStudyRecord()
+            refreshTodoList()
         } catch (e: TimerException.SaveFailedException) {
             showError("저장 실패", "타이머 저장에 실패했습니다.")
         }

@@ -5,6 +5,7 @@ import javafx.animation.AnimationTimer
 import javafx.scene.control.Label
 
 class TodoTimerManager(
+    private val todoId: Long,  // ✅ 추가
     private val timerLabel: Label,
     private val onTimerUpdate: (Int) -> Unit,
     private val onTimerStateChange: (Boolean) -> Unit,
@@ -14,6 +15,8 @@ class TodoTimerManager(
     private var startTimeNs: Long = 0L
     private var animationTimer: AnimationTimer? = null
     private var elapsedSeconds = 0
+
+    fun getTodoId(): Long = todoId
 
     fun start() {
         if (timerRunning) return

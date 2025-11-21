@@ -18,7 +18,8 @@ class TodoListCell(
     private val onEdit: (Todo) -> Unit,
     private val onDelete: (Todo) -> Unit,
     private val onCanStartTimer: (Todo) -> Boolean,
-    private val onPriorityChange: (Todo, Priority) -> Unit
+    private val onPriorityChange: (Todo, Priority) -> Unit,
+    private val getActiveTimerId: () -> Long?
 ) : ListCell<Todo>() {
 
     private val priorityLabel = Label()
@@ -177,6 +178,7 @@ class TodoListCell(
         graphic = null
         timerManager?.stop()
         timerManager = null
+        startPauseButton.text = "시작"
     }
 
     private fun renderCell(todo: Todo) {
@@ -192,29 +194,55 @@ class TodoListCell(
         styleManager.applyStatusStyle(label, todo.status)
         initializeTimerIfNeeded(todo)
         updateButtonStates(todo)
+        updateButtonText()
     }
 
     private fun initializeTimerIfNeeded(todo: Todo) {
         val currentManager = timerManager
+        val activeTimerId = getActiveTimerId()
 
         when {
-            currentManager == null -> createNewTimer(todo)
-            currentManager.isRunning() -> {}
+            currentManager == null || currentManager.getTodoId() != todo.id -> {
+                currentManager?.stop()
+                createNewTimer(todo)
+
+                if (activeTimerId == todo.id) {
+                    timerManager?.start()
+                }
+            }
+            currentManager.isRunning() -> {
+            }
             else -> {
                 currentManager.setElapsedSeconds(todo.timerSeconds)
+
+                if (activeTimerId == todo.id) {
+                    currentManager.start()
+                }
             }
         }
     }
 
     private fun createNewTimer(todo: Todo) {
         timerManager = TodoTimerManager(
+            todoId = todo.id,
             timerLabel = timerLabel,
             onTimerUpdate = { },
-            onTimerStateChange = { isRunning -> updateTimerStyle(isRunning) },
+            onTimerStateChange = { isRunning ->
+                updateTimerStyle(isRunning)
+                updateButtonText()
+            },
             onError = { exception -> handleTimerError(exception) }
         )
         timerManager?.setElapsedSeconds(todo.timerSeconds)
         updateTimerStyle(false)
+    }
+
+    private fun updateButtonText() {
+        val manager = timerManager
+        startPauseButton.text = when {
+            manager != null && manager.isRunning() -> "일시정지"
+            else -> "시작"
+        }
     }
 
     private fun handleTimerError(exception: Exception) {
