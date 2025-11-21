@@ -26,7 +26,7 @@ class TodoListCell(
     private val timerLabel = Label()
     private val priorityChoice = ChoiceBox<Priority>().apply {
         items.addAll(Priority.HIGH, Priority.MEDIUM, Priority.LOW)
-        prefWidth = 70.0
+        prefWidth = 85.0
     }
     private val startPauseButton = Button("시작")
     private val resetButton = Button("초기화")

@@ -3,9 +3,9 @@ package com.lsk.learningtracker.user.view
 import com.lsk.learningtracker.calendar.view.CalendarMapView
 import com.lsk.learningtracker.study.service.StudyRecordService
 import com.lsk.learningtracker.todo.controller.TodoController
-import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.enums.TodoFilter
 import com.lsk.learningtracker.todo.filter.TodoFilterManager
+import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.model.TodoSortManager
 import com.lsk.learningtracker.todo.service.TodoService
@@ -161,22 +161,22 @@ class MainView(
     private fun createInputBox(): HBox {
         val todoInputField = TextField().apply {
             promptText = "새 투두 내용을 입력하세요"
-            prefWidth = 300.0
-        }
+            prefWidth = 350.0
 
-        val priorityChoice = ChoiceBox<Priority>().apply {
-            items.addAll(Priority.HIGH, Priority.MEDIUM, Priority.LOW)
-            value = Priority.MEDIUM
-            prefWidth = 80.0
-        }
-
-        val addButton = Button("추가").apply {
             setOnAction {
-                handleAddTodo(todoInputField, priorityChoice)
+                handleAddTodo(this)
             }
         }
 
-        return HBox(10.0, todoInputField, priorityChoice, addButton).apply {
+        val addButton = Button("추가").apply {
+            prefWidth = 80.0
+            style = "-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;"
+            setOnAction {
+                handleAddTodo(todoInputField)
+            }
+        }
+
+        return HBox(10.0, todoInputField, addButton).apply {
             alignment = Pos.CENTER
         }
     }
@@ -228,21 +228,19 @@ class MainView(
 
     private fun showTodoDetailModal(date: LocalDate) {
         val todos = todoService.getTodosByDate(authController.getUserId(), date)
-        val studyRecord = studyRecordService.getStudyRecord(authController.getUserId(), date)
+        val studyRecord = studyRecordService.getOrCalculateStudyRecord(authController.getUserId(), date)
 
         TodoDetailModal().show(stage, date, todos, studyRecord)
     }
 
-    private fun handleAddTodo(inputField: TextField, priorityChoice: ChoiceBox<Priority>) {
+    private fun handleAddTodo(inputField: TextField) {
         val content = inputField.text.trim()
-        val priority = priorityChoice.value
 
         when {
             content.isEmpty() -> return
             else -> {
-                todoController.createTodo(content, priority)
+                todoController.createTodo(content, Priority.MEDIUM)
                 inputField.clear()
-                priorityChoice.value = Priority.MEDIUM
                 refreshTodoList()
                 updateStudyRecord()
             }
