@@ -92,6 +92,7 @@ class TodoListCell(
             val manager = timerManager ?: return@setOnAction
 
             manager.reset()
+            startPauseButton.text = "시작"
             onTimerReset(currentItem)
         }
 
@@ -132,10 +133,17 @@ class TodoListCell(
 
     private fun handleComplete(todo: Todo) {
         val manager = timerManager ?: return
-        if (manager.isRunning()) {
-            val elapsed = manager.pause()
-            onTimerPause(todo, elapsed)
+
+        val finalElapsed = when {
+            manager.isRunning() -> {
+                val elapsed = manager.pause()
+                startPauseButton.text = "시작"
+                elapsed
+            }
+            else -> manager.getElapsedSeconds()
         }
+
+        onTimerPause(todo, finalElapsed)
         onComplete(todo)
     }
 
