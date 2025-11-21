@@ -27,6 +27,10 @@ class TodoService(
         return todoRepository.findTodayTodos(userId)
     }
 
+    fun getTodosByDate(userId: Long, date: LocalDate): List<Todo> {
+        return todoRepository.findTodosByDate(userId, date)
+    }
+
     fun updateTodo(todo: Todo) {
         todoRepository.update(todo)
     }

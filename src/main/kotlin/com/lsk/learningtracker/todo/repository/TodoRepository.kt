@@ -38,7 +38,11 @@ class TodoRepository {
     }
 
     fun findTodayTodos(userId: Long): List<Todo> {
-        val today = formatDate(LocalDate.now())
+        return findTodosByDate(userId, LocalDate.now())
+    }
+
+    fun findTodosByDate(userId: Long, date: LocalDate): List<Todo> {
+        val dateStr = formatDate(date)
         val sql = """
             SELECT * FROM todos 
             WHERE user_id = ? AND created_date = ?
@@ -49,7 +53,7 @@ class TodoRepository {
         DatabaseManager.getConnection().use { conn ->
             conn.prepareStatement(sql).use { stmt ->
                 stmt.setLong(1, userId)
-                stmt.setString(2, today)
+                stmt.setString(2, dateStr)
                 val rs = stmt.executeQuery()
 
                 while (rs.next()) {
