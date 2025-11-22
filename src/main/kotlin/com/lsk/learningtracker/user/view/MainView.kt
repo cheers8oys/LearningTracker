@@ -1,12 +1,13 @@
 package com.lsk.learningtracker.user.view
 
-import com.lsk.learningtracker.calendar.view.CalendarMapView
+import com.lsk.learningtracker.statistics.view.StatisticsView
+import com.lsk.learningtracker.studyRecord.view.CalendarMapView
 import com.lsk.learningtracker.study.service.StudyRecordService
+import com.lsk.learningtracker.studyRecord.service.StatisticsService
 import com.lsk.learningtracker.todo.controller.TodoController
 import com.lsk.learningtracker.todo.enums.TodoFilter
 import com.lsk.learningtracker.todo.filter.TodoFilterManager
 import com.lsk.learningtracker.todo.enums.Priority
-import com.lsk.learningtracker.todo.enums.TodoStatus
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.model.TodoSortManager
 import com.lsk.learningtracker.todo.service.TodoService
@@ -34,6 +35,7 @@ class MainView(
     private val user: User,
     private val todoService: TodoService,
     private val studyRecordService: StudyRecordService,
+    private val statisticsService: StatisticsService,
     private val onLogout: () -> Unit
 ) {
     private val todoList = FXCollections.observableArrayList<Todo>()
@@ -148,7 +150,7 @@ class MainView(
                 createInputBox(),
                 createFilterBox(),
                 createTodoListView(),
-                createLogoutButton()
+                createBottomButtons()
             )
         }
     }
@@ -357,4 +359,32 @@ class MainView(
         studyRecordService.updateStudyRecord(authController.getUserId(), LocalDate.now())
         refreshCalendar()
     }
+
+    private fun createBottomButtons(): HBox {
+        val statisticsButton = Button("📊 통계").apply {
+            setOnAction {
+                showStatistics()
+            }
+            style = "-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-weight: bold;"
+            prefWidth = 100.0
+        }
+
+        val logoutButton = Button("로그아웃").apply {
+            setOnAction {
+                authController.logout()
+            }
+            style = "-fx-background-color: #f44336; -fx-text-fill: white; -fx-font-weight: bold;"
+            prefWidth = 100.0
+        }
+
+        return HBox(10.0, statisticsButton, logoutButton).apply {
+            alignment = Pos.CENTER
+        }
+    }
+
+    private fun showStatistics() {
+        val statisticsView = StatisticsView(authController.getUserId(), statisticsService)
+        statisticsView.show(stage)
+    }
+
 }

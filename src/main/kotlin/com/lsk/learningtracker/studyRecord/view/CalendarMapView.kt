@@ -1,4 +1,4 @@
-package com.lsk.learningtracker.calendar.view
+package com.lsk.learningtracker.studyRecord.view
 
 import com.lsk.learningtracker.studyRecord.model.StudyRecord
 import javafx.geometry.Insets
