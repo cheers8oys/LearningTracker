@@ -5,7 +5,7 @@ import javafx.animation.AnimationTimer
 import javafx.scene.control.Label
 
 class TodoTimerManager(
-    private val todoId: Long,  // ✅ 추가
+    private val todoId: Long,
     private val timerLabel: Label,
     private val onTimerUpdate: (Int) -> Unit,
     private val onTimerStateChange: (Boolean) -> Unit,
