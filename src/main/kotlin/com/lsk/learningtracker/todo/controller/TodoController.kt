@@ -112,4 +112,18 @@ class TodoController(
         todo.status = status
         todoService.updateTodo(todo)
     }
+
+    fun isTimerActive(todo: Todo): Boolean {
+        return activeTimerManager.isTimerActive(todo.id)
+    }
+
+    fun pauseTimer(todo: Todo) {
+        when {
+            activeTimerManager.isTimerActive(todo.id) -> {
+                todo.status = TodoStatus.PENDING
+                activeTimerManager.stopTimer(todo.id)
+                todoService.updateTodo(todo)
+            }
+        }
+    }
 }

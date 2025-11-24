@@ -1,10 +1,13 @@
 package com.lsk.learningtracker.todo.view
 
+import com.lsk.learningtracker.faceDetection.controller.FaceDetectionController
+import com.lsk.learningtracker.faceDetection.view.AbsenceTimerView
 import com.lsk.learningtracker.todo.controller.TodoController
 import com.lsk.learningtracker.todo.enums.Priority
 import com.lsk.learningtracker.todo.enums.TodoFilter
 import com.lsk.learningtracker.todo.model.Todo
 import com.lsk.learningtracker.todo.timer.TimerException
+import com.lsk.learningtracker.utils.TimeFormatter
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.geometry.Insets
@@ -23,14 +26,22 @@ class TodoView(
     private val todoList: ObservableList<Todo> = FXCollections.observableArrayList()
     private lateinit var filterButtonGroup: FilterButtonGroup
     private lateinit var todoInputField: TextField
+    private lateinit var faceDetectionController: FaceDetectionController
+    private lateinit var absenceTimerView: AbsenceTimerView
+    private var faceDetectionPaused = false
+    private var isFaceDetectionActive = false
+
+    init {
+        initializeFaceDetection()
+    }
 
     fun create(): VBox {
         return VBox(15.0).apply {
             padding = Insets(20.0)
             alignment = Pos.TOP_CENTER
-
             children.addAll(
                 createHeader(),
+                createFaceDetectionToggle(),
                 createInputBox(),
                 createFilterBox(),
                 createTodoListView()
@@ -42,9 +53,84 @@ class TodoView(
         refreshTodoList()
     }
 
+    private fun initializeFaceDetection() {
+        absenceTimerView = AbsenceTimerView(
+            parentStage = stage,
+            onResumeStudy = { todo, absenceTime ->
+                handleResumeAfterAbsence(todo, absenceTime)
+            }
+        )
+
+        faceDetectionController = FaceDetectionController(
+            todoController = todoController,
+            onShowAbsencePopup = { todo ->
+                absenceTimerView.show(todo)
+            },
+            onHideAbsencePopup = {
+                absenceTimerView.showResumeButtons()
+            }
+        )
+    }
+
     private fun createHeader(): Label {
         return Label("환영합니다, ${username}님!").apply {
             style = "-fx-font-size: 24px; -fx-font-weight: bold;"
+        }
+    }
+
+    private fun createFaceDetectionToggle(): HBox {
+        val toggleLabel = Label("얼굴 감지 일시정지:").apply {
+            style = "-fx-font-size: 14px; -fx-font-weight: bold;"
+        }
+
+        val statusLabel = Label("[ 활성화 ]").apply {
+            style = "-fx-font-size: 12px; -fx-text-fill: green; -fx-font-weight: bold;"
+        }
+
+        val toggleCheckBox = CheckBox().apply {
+            isSelected = faceDetectionPaused
+
+            setOnAction {
+                faceDetectionPaused = isSelected
+
+                when {
+                    faceDetectionPaused -> {
+                        statusLabel.text = "[ 일시정지됨 ]"
+                        statusLabel.style = "-fx-font-size: 12px; -fx-text-fill: red; -fx-font-weight: bold;"
+
+                        when {
+                            isFaceDetectionActive -> {
+                                faceDetectionController.disable()
+                                isFaceDetectionActive = false
+                            }
+                        }
+                    }
+                    else -> {
+                        statusLabel.text = "[ 활성화 ]"
+                        statusLabel.style = "-fx-font-size: 12px; -fx-text-fill: green; -fx-font-weight: bold;"
+
+                        val activeTimerId = todoController.getActiveTimerId()
+                        when {
+                            activeTimerId != null -> {
+                                val activeTodo = todoList.find { it.id == activeTimerId }
+                                activeTodo?.let { todo ->
+                                    faceDetectionController.enableForTodo(todo)
+                                    isFaceDetectionActive = true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        val infoLabel = Label("(체크 시 얼굴 감지 기능 일시 중지)").apply {
+            style = "-fx-font-size: 11px; -fx-text-fill: gray;"
+        }
+
+        return HBox(10.0, toggleLabel, toggleCheckBox, statusLabel, infoLabel).apply {
+            alignment = Pos.CENTER
+            padding = Insets(5.0)
         }
     }
 
@@ -74,6 +160,7 @@ class TodoView(
         filterButtonGroup = FilterButtonGroup { filter ->
             handleFilterChange(filter)
         }
+
         return filterButtonGroup.createFilterBox()
     }
 
@@ -123,15 +210,37 @@ class TodoView(
     private fun handleTimerStart(todo: Todo) {
         try {
             todoController.startTimer(todo)
+
+            when {
+                !faceDetectionPaused -> {
+                    try {
+                        faceDetectionController.enableForTodo(todo)
+                        isFaceDetectionActive = true
+                    } catch (e: Exception) {
+                        showError("얼굴 감지 실패", "얼굴 감지를 시작할 수 없습니다: ${e.message}")
+                    }
+                }
+            }
+
             refreshTodoList()
         } catch (e: TimerException.AlreadyRunningException) {
             showError("타이머 실행 불가", e.message ?: "다른 타이머가 실행 중입니다.")
+        } catch (e: Exception) {
+            showError("오류 발생", "타이머 시작 중 오류가 발생했습니다: ${e.message}")
         }
     }
 
     private fun handleTimerPause(todo: Todo, elapsedSeconds: Int) {
         try {
             todoController.pauseTimer(todo, elapsedSeconds)
+
+            when {
+                isFaceDetectionActive -> {
+                    faceDetectionController.disable()
+                    isFaceDetectionActive = false
+                }
+            }
+
             onStudyRecordUpdate()
             refreshTodoList()
         } catch (e: TimerException.SaveFailedException) {
@@ -143,6 +252,7 @@ class TodoView(
         try {
             todoController.resetTimer(todo)
             onStudyRecordUpdate()
+            refreshTodoList()
         } catch (e: TimerException.SaveFailedException) {
             showError("초기화 실패", "타이머 초기화에 실패했습니다.")
         }
@@ -150,6 +260,14 @@ class TodoView(
 
     private fun handleComplete(todo: Todo) {
         todoController.completeTodo(todo)
+
+        when {
+            isFaceDetectionActive -> {
+                faceDetectionController.disable()
+                isFaceDetectionActive = false
+            }
+        }
+
         refreshTodoList()
         onStudyRecordUpdate()
     }
@@ -168,9 +286,42 @@ class TodoView(
     }
 
     private fun handleDelete(todo: Todo) {
+        val isActive = todoController.isTimerActive(todo)
+
         todoController.deleteTodo(todo)
+
+        when {
+            isActive && isFaceDetectionActive -> {
+                faceDetectionController.disable()
+                isFaceDetectionActive = false
+            }
+        }
+
         refreshTodoList()
         onStudyRecordUpdate()
+    }
+
+    private fun handleResumeAfterAbsence(todo: Todo, absenceTime: Int) {
+        try {
+            todoController.startTimer(todo)
+
+            when {
+                !faceDetectionPaused -> {
+                    faceDetectionController.enableForTodo(todo)
+                    isFaceDetectionActive = true
+                }
+            }
+
+            showAbsenceReport(absenceTime)
+            refreshTodoList()
+        } catch (e: TimerException.AlreadyRunningException) {
+            showError("타이머 재개 실패", "타이머를 재개할 수 없습니다.")
+        }
+    }
+
+    private fun showAbsenceReport(absenceTime: Int) {
+        val formattedTime = TimeFormatter.formatSecondsWithLabel(absenceTime)
+        showInfo("자리 비움 시간", "자리를 비운 시간: $formattedTime")
     }
 
     private fun refreshTodoList() {
@@ -193,5 +344,24 @@ class TodoView(
         alert.headerText = null
         alert.contentText = message
         alert.showAndWait()
+    }
+
+    private fun showInfo(title: String, message: String) {
+        val alert = Alert(Alert.AlertType.INFORMATION)
+        alert.title = title
+        alert.headerText = null
+        alert.contentText = message
+        alert.showAndWait()
+    }
+
+    fun cleanup() {
+        when {
+            isFaceDetectionActive -> {
+                faceDetectionController.disable()
+                isFaceDetectionActive = false
+            }
+        }
+
+        absenceTimerView.close()
     }
 }
